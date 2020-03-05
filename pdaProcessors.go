@@ -81,7 +81,6 @@ func Put(pda *PdaProcessor, s string){
 	pda.CurrentStack = "null"
 	matching := false
 	for i:= 0; i < input_length; i++ {
-		fmt.Println("i ran for ", i)
 		pda.CurrentStack = "null"
 		char := string(s[i])
 		matching = false
@@ -89,11 +88,9 @@ func Put(pda *PdaProcessor, s string){
 		for j := 0 ; j < transition_length ; j++ {	
 			t := transitions[j]
 			if t[0] == pda.CurrentState && t[1] == char && t[2] == pda.CurrentStack { 
-				fmt.Println("IFF BLOCK ")
 				matching = true
 				pda.TransitionStack = append(pda.TransitionStack, pda.CurrentState)
 				pda.CurrentState = t[3]
-				fmt.Println("Tocken Stack", pda.TransitionStack)
 				if t[4] != "null" {
 					Push(pda, t[4])
 					pda.CurrentStack = t[4]
@@ -123,7 +120,6 @@ func Put(pda *PdaProcessor, s string){
 			pda.CurrentStack = pda.Eos
 			pda.CurrentState = "q4"
 			pda.TransitionStack = append(pda.TransitionStack, pda.CurrentState)
-			fmt.Println("pda.TransitionStackFinal", pda.TransitionStack)
 		}
 	}
 	is_accepted(pda, matching)
@@ -149,14 +145,11 @@ func Peek(pda *PdaProcessor) {
 }
 
 func Push(pda *PdaProcessor, x string)  {
-	fmt.Println("push ", x)
 	pda.TokenStack = append(pda.TokenStack, x)
- 	fmt.Println("PUSHED= ", pda.TokenStack)
 }
 
 func Pop(pda *PdaProcessor)  {
 	pda.TokenStack = pda.TokenStack[:len(pda.TokenStack) - 1]
-	fmt.Println("POPPED= ", pda.TokenStack)
 }
 
 // A function that calls panic if it detects an error.
