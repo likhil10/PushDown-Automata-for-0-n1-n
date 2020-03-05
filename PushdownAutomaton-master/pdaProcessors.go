@@ -44,6 +44,9 @@ type PdaProcessor struct {
 
 	// This slice is used to hold the token stack.
 	TokenStack []string
+
+	//This keeps a count of everytime put method is called
+	PutCounter int
 }
 
 // Unmarshals the jsonText string. Returns true if it succeeds.
@@ -70,6 +73,7 @@ func (pda *PdaProcessor) Reset(){
 }
 
 func Put(pda *PdaProcessor, s string){
+	pda.PutCounter += 1
 	input_length := len(s)
 	transitions := pda.Transitions
 	transition_length := len(transitions)
@@ -160,6 +164,18 @@ func check(e error) {
 	if e != nil{
 		panic(e)
 	}
+}
+
+func eos()  {
+	
+}
+
+func current_state()  {
+	
+}
+
+func close()  {
+	
 }
 
 func main() {
