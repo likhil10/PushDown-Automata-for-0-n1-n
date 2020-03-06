@@ -56,7 +56,7 @@ type PdaProcessor struct {
 }
 
 // Unmarshals the jsonText string. Returns true if it succeeds.
-func (pda *PdaProcessor) Open(jsonText string) (bool){
+func (pda *PdaProcessor) open(jsonText string) (bool){
 
 	if err := json.Unmarshal([]byte(jsonText), &pda); err != nil {
 		check(err)
@@ -73,17 +73,20 @@ func (pda *PdaProcessor) Open(jsonText string) (bool){
 }
 
 // Sets the CurrentState to StartState and assigns Stack a new empty slice
-func (pda *PdaProcessor) Reset(){
+func reset(pda *PdaProcessor){
 	pda.CurrentState = pda.StartState
 	pda.TokenStack = []string{}
 }
 
-func Put(pda *PdaProcessor, char string){
+func put(pda *PdaProcessor, char string){
 	pda.PutCounter += 1
 	transitions := pda.Transitions
 	transition_length := len(transitions)
+	if pda.PutCounter == 1 {
+		putForTFirst(pda)
+	}
 
-	for j := 0 ; j < transition_length ; j++ {	
+	for j := 1 ; j < transition_length ; j++ {	
 		t := transitions[j]
 
 		if t[0] == pda.CurrentState && t[1] == char && t[2] == pda.CurrentStack { 
@@ -91,22 +94,23 @@ func Put(pda *PdaProcessor, char string){
 			pda.TransitionStack = append(pda.TransitionStack, pda.CurrentState)
 			pda.TransitionCounter += 1
 			pda.CurrentState = t[3]
+			pda.TransitionStack = append(pda.TransitionStack, pda.CurrentState)			
 
 			if t[4] != "null" {
-				Push(pda, t[4])
+				push(pda, t[4])
 				pda.CurrentStack = t[4]
 			} else {
 				if len(pda.TokenStack) == 0 {
 					pda.IsAccepted = false
 					break
 				} else {
-					Pop(pda)
+					pop(pda)
 					break
 				}
 			}
 		}
 
-		if len(pda.TokenStack) > 0 {
+		if len(pda.TokenStack) > 1 {
 			pda.CurrentStack = pda.TokenStack[len(pda.TokenStack)-1]
 		} else {
 			break
@@ -114,30 +118,42 @@ func Put(pda *PdaProcessor, char string){
 	}
 }
 
-func is_accepted(pda *PdaProcessor)  {
+func putForTFirst(pda *PdaProcessor)  {
+	if pda.Transitions[0][0] == pda.CurrentState {
+		pda.TransitionStack = append(pda.TransitionStack, pda.CurrentState)
+		pda.CurrentState = pda.Transitions[0][3]
+		push(pda, pda.Transitions[0][4])
+		pda.TransitionCounter += 1
+	}
+}
+
+func is_accepted(pda *PdaProcessor) bool {
 	if len(pda.TokenStack) == 0 && pda.IsAccepted == true {
-		fmt.Println("Accepted: TRUE")
+		return true
 	} else {
-		fmt.Println("Accepted: FALSE")
+		return false
 	}
 }
 
-func Peek(pda *PdaProcessor) {
-	if len(pda.TokenStack) == 0 && pda.CurrentState == "q3" {
-		pda.CurrentStack = "$"
-		// pda.char = "null"
-	} else if len(pda.TokenStack) == 0 {
-		pda.CurrentStack = "null"
-	} else {
-		pda.CurrentStack = "0"
+func peek(pda *PdaProcessor, n int) []string {
+	if len(pda.TokenStack) > 0 {
+		if len(pda.TokenStack) < n {
+			return pda.TokenStack
+		} else if len(pda.TokenStack) > n {
+			x := len(pda.TokenStack) - (n-1)
+			return pda.TokenStack[x-1:]
+		} else if len(pda.TokenStack) == n {
+			return pda.TokenStack[:n]
+		}
 	}
+	return pda.TokenStack
 }
 
-func Push(pda *PdaProcessor, x string)  {
+func push(pda *PdaProcessor, x string)  {
 	pda.TokenStack = append(pda.TokenStack, x)
 }
 
-func Pop(pda *PdaProcessor)  {
+func pop(pda *PdaProcessor)  {
 	pda.TokenStack = pda.TokenStack[:len(pda.TokenStack) - 1]
 }
 
@@ -148,12 +164,16 @@ func check(e error) {
 	}
 }
 
-func eos()  {
-	
+func eos(pda *PdaProcessor)  {
+	if len(pda.TransitionStack) > 0 && pda.TransitionStack[0] == "q1" && pda.TransitionStack[len(pda.TransitionStack)-1] == "q4" {
+		fmt.Println("Reached the end of string.")
+	} else {
+		fmt.Println("Did not reach the end of string but EOS was called.")
+	}
 }
 
-func current_state()  {
-	
+func current_state(pda *PdaProcessor) string {
+	return pda.CurrentState
 }
 
 func close()  {
@@ -170,15 +190,21 @@ func main() {
 	
 	pda := new(PdaProcessor)
 	
-	if pda.Open(string(jsonText)){
+	if pda.open(string(jsonText)){
 		// fmt.Println(pda)
 	} else {
 		fmt.Println("Error: could not open JSON file")
 	}
 
+	reset(pda)
+
 	check(err)
 
 	var s string
+	var currentState string
+	var accepted bool
+	var peekStack []string
+
 	fmt.Print("Enter the input string: ")
   	fmt.Scan(&s)
 	  
@@ -193,20 +219,33 @@ func main() {
 		pda.CurrentStack = "null"
 		pda.IsAccepted = false
 		if len(char) == 1 {
-			Put(pda, char)
+			put(pda, char)
 		}
 		if pda.IsAccepted == false {
 			break
 		}
 	}
 	if len(pda.TransitionStack) > 0 {
-		if pda.TransitionStack[len(pda.TransitionStack)-1] == "q3" && len(pda.TokenStack) == 0 && pda.IsAccepted == true {
-			pda.CurrentStack = pda.Eos
+		if pda.TransitionStack[len(pda.TransitionStack)-1] == "q3" && len(pda.TokenStack) == 1 && pda.IsAccepted == true {
+			pda.CurrentStack = pda.TokenStack[0]
 			pda.CurrentState = "q4"
 			pda.TransitionStack = append(pda.TransitionStack, pda.CurrentState)
+			pop(pda)
 		}
 	}
-	is_accepted(pda)
-	fmt.Println("Number of times Put was called: ", pda.PutCounter)
-	fmt.Println("Number of times Transitions were changed: ", pda.TransitionCounter)
+
+	accepted = is_accepted(pda)
+	fmt.Println("Accepted: ", accepted)	
+	if accepted {
+		fmt.Println("Number of times put was called: ", pda.PutCounter)
+		fmt.Println("Number of times Transitions were changed: ", pda.TransitionCounter)
+	}
+
+	peekStack = peek(pda, 5)
+	fmt.Println("Peek Stack: ",peekStack)
+
+	eos(pda)
+
+	currentState = current_state(pda)
+	fmt.Println("Current State: ", currentState)
 }
