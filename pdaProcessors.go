@@ -7,20 +7,6 @@ import (
 	"io/ioutil"
 )
 
-// {"name":"HelloPDA",
-// "states":["q1","q2","q3","q4"],
-// "input_alphabet":["0","1"],
-// "stack_alphabet":["0","1"],
-// "accepting_states":["q1","q4"],
-// "start_state":"q1",
-// "transitions":[
-//  ["q1","null","null","q2","$"], first transition state.
-// 	["q2","0","null","q2","0"],
-// 	["q2","1","0","q3","null"],
-// 	["q3","1","0","q3","null"],
-// 	["q3","null","$","q4","null"]],
-// "eos":"$"}
-
 // Structure of type PdaProcessor.
 type PdaProcessor struct {
 	// Note: field names must begin with capital letter for JSON
@@ -78,6 +64,7 @@ func reset(pda *PdaProcessor){
 	pda.TokenStack = []string{}
 }
 
+//  Consumes the token, takes appropriate transition(s)
 func put(pda *PdaProcessor, char string){
 	pda.PutCounter += 1
 	transitions := pda.Transitions
@@ -118,6 +105,7 @@ func put(pda *PdaProcessor, char string){
 	}
 }
 
+// Put method for the first transition with no input
 func putForTFirst(pda *PdaProcessor)  {
 	if pda.Transitions[0][0] == pda.CurrentState {
 		pda.TransitionStack = append(pda.TransitionStack, pda.CurrentState)
@@ -127,6 +115,7 @@ func putForTFirst(pda *PdaProcessor)  {
 	}
 }
 
+// Returns True if the PDA was succesfully satisfied
 func is_accepted(pda *PdaProcessor) bool {
 	if len(pda.TokenStack) == 0 && pda.IsAccepted == true {
 		return true
@@ -135,24 +124,27 @@ func is_accepted(pda *PdaProcessor) bool {
 	}
 }
 
-func peek(pda *PdaProcessor, n int) []string {
+// Return up to k stack tokens from the top of the stack (default k=1) without modifying the stack.
+func peek(pda *PdaProcessor, k int) []string {
 	if len(pda.TokenStack) > 0 {
-		if len(pda.TokenStack) < n {
+		if len(pda.TokenStack) < k {
 			return pda.TokenStack
-		} else if len(pda.TokenStack) > n {
-			x := len(pda.TokenStack) - (n-1)
+		} else if len(pda.TokenStack) > k {
+			x := len(pda.TokenStack) - (k-1)
 			return pda.TokenStack[x-1:]
-		} else if len(pda.TokenStack) == n {
-			return pda.TokenStack[:n]
+		} else if len(pda.TokenStack) == k {
+			return pda.TokenStack[:k]
 		}
 	}
 	return pda.TokenStack
 }
 
+// Adds an input token to the stack
 func push(pda *PdaProcessor, x string)  {
 	pda.TokenStack = append(pda.TokenStack, x)
 }
 
+// Removes an input token from the last of the stack
 func pop(pda *PdaProcessor)  {
 	pda.TokenStack = pda.TokenStack[:len(pda.TokenStack) - 1]
 }
@@ -164,6 +156,7 @@ func check(e error) {
 	}
 }
 
+// Declares the end of string
 func eos(pda *PdaProcessor)  {
 	if len(pda.TransitionStack) > 0 && pda.TransitionStack[0] == "q1" && pda.TransitionStack[len(pda.TransitionStack)-1] == "q4" {
 		fmt.Println("Reached the end of string.")
@@ -172,10 +165,12 @@ func eos(pda *PdaProcessor)  {
 	}
 }
 
+// Returns the current state
 func current_state(pda *PdaProcessor) string {
 	return pda.CurrentState
 }
 
+// Garbage disposal method
 func close()  {
 	
 }
@@ -191,7 +186,7 @@ func main() {
 	pda := new(PdaProcessor)
 	
 	if pda.open(string(jsonText)){
-		// fmt.Println(pda)
+		fmt.Println("JSON file read.")
 	} else {
 		fmt.Println("Error: could not open JSON file")
 	}
@@ -241,7 +236,7 @@ func main() {
 		fmt.Println("Number of times Transitions were changed: ", pda.TransitionCounter)
 	}
 
-	peekStack = peek(pda, 5)
+	peekStack = peek(pda, 1)
 	fmt.Println("Peek Stack: ",peekStack)
 
 	eos(pda)
