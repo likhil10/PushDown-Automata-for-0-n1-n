@@ -34,8 +34,17 @@ type PdaProcessor struct {
 	// This keeps a count of everytime put method is called
 	PutCounter int
 
+	// This keeps a count of everytime is_accepted method is called
+	Is_Accepted int
+
+	// This keeps a count of everytime peek method is called
+	Peek int
+
 	// This keeps a count for everytime a transition  is changed
 	TransitionCounter int
+
+	// This keeps a count for everytime current_state method is called
+	CurrentStateCounter int
 
 	// This checks if the input is accepted by the PDA
 	IsAccepted bool
@@ -117,6 +126,7 @@ func putForTFirst(pda *PdaProcessor)  {
 
 // Returns True if the PDA was succesfully satisfied
 func is_accepted(pda *PdaProcessor) bool {
+	pda.Is_Accepted += 1
 	if len(pda.TokenStack) == 0 && pda.IsAccepted == true {
 		return true
 	} else {
@@ -126,6 +136,7 @@ func is_accepted(pda *PdaProcessor) bool {
 
 // Return up to k stack tokens from the top of the stack (default k=1) without modifying the stack.
 func peek(pda *PdaProcessor, k int) []string {
+	pda.Peek += 1
 	if len(pda.TokenStack) > 0 {
 		if len(pda.TokenStack) < k {
 			return pda.TokenStack
@@ -159,14 +170,15 @@ func check(e error) {
 // Declares the end of string
 func eos(pda *PdaProcessor)  {
 	if len(pda.TransitionStack) > 0 && pda.TransitionStack[0] == "q1" && pda.TransitionStack[len(pda.TransitionStack)-1] == "q4" {
-		fmt.Println("Reached the end of string.")
+		fmt.Println("pda=", pda.Name, ":method=eos:: Reached the End of String")
 	} else {
-		fmt.Println("Did not reach the end of string but EOS was called.")
+		fmt.Println("pda=", pda.Name, ":method=eos::Did not reach the end of string but EOS was called.")
 	}
 }
 
 // Returns the current state
 func current_state(pda *PdaProcessor) string {
+	pda.CurrentStateCounter += 1
 	return pda.CurrentState
 }
 
@@ -176,6 +188,11 @@ func close()  {
 }
 
 func main() {
+	var s string
+	var currentState string
+	var accepted bool
+	var peekStack []string
+
 	if len(os.Args) < 2{
 		fmt.Println("Error: command-line args must include JSON file path")
 		os.Exit(0)
@@ -194,11 +211,6 @@ func main() {
 	reset(pda)
 
 	check(err)
-
-	var s string
-	var currentState string
-	var accepted bool
-	var peekStack []string
 
 	fmt.Print("Enter the input string: ")
   	fmt.Scan(&s)
@@ -230,17 +242,17 @@ func main() {
 	}
 
 	accepted = is_accepted(pda)
-	fmt.Println("Accepted: ", accepted)	
+	fmt.Println("pda=", pda.Name, ":call_no=", pda.Is_Accepted, ":method=is_accepted:: ", accepted)	
 	if accepted {
 		fmt.Println("Number of times put was called: ", pda.PutCounter)
 		fmt.Println("Number of times Transitions were changed: ", pda.TransitionCounter)
 	}
 
 	peekStack = peek(pda, 1)
-	fmt.Println("Peek Stack: ",peekStack)
+	fmt.Println("pda=", pda.Name, ":call_no=", pda.Peek, ":method=peek:: ", peekStack)
 
 	eos(pda)
 
 	currentState = current_state(pda)
-	fmt.Println("Current State: ", currentState)
+	fmt.Println("pda=", pda.Name, ":call_no=", pda.CurrentStateCounter, ":method=peek:: ", currentState)
 }

@@ -1,4 +1,4 @@
-{"name":"HelloPDA",
+{"name":"testPDA",
     "states":["q1","q2","q3","q4"],
     "input_alphabet":["1","0"],
     "stack_alphabet":["1","0"],
